@@ -3,159 +3,125 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Platform_Core_v2</title>
+    <title>Orion Arena</title>
     <style>
-        :root { --neon-green: #39ff14; --gold: #ffd700; }
-        body { margin: 0; background: #000; font-family: 'Arial Black', sans-serif; color: white; overflow: hidden; }
-        
-        /* Realistic Grass Background */
-        .stadium-bg {
-            position: fixed; inset: 0;
-            background: radial-gradient(circle, #2d5a27 0%, #1e3c1a 100%);
-            background-image: repeating-linear-gradient(90deg, transparent, transparent 50px, rgba(255,255,255,0.02) 50px, rgba(255,255,255,0.02) 100px);
-            z-index: -1;
-        }
-
-        /* Top Bar: Wallet & Status */
-        .top-bar {
-            position: absolute; top: 0; width: 100%; height: 60px;
-            background: rgba(0,0,0,0.8); border-bottom: 2px solid var(--neon-green);
-            display: flex; justify-content: space-between; align-items: center; padding: 0 15px; box-sizing: border-box;
-        }
-        .balance { font-size: 0.9rem; color: var(--neon-green); text-shadow: 0 0 5px var(--neon-green); }
-        .balance span { color: white; display: block; font-size: 0.7rem; }
-
-        /* The Goal & Pitch */
-        .pitch {
-            position: relative; width: 100%; height: 100vh;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-        }
-
-        .goal-container {
-            position: relative; width: 95%; max-width: 500px; height: 250px;
-            border: 6px solid #fff; border-bottom: none; border-radius: 5px 5px 0 0;
-            background: rgba(255,255,255,0.1); box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-        }
-
-        /* Goal Net Pattern */
-        .goal-container::before {
-            content: ''; position: absolute; inset: 0;
-            background-image: linear-gradient(#ffffff22 1px, transparent 1px), linear-gradient(90deg, #ffffff22 1px, transparent 1px);
-            background-size: 20px 20px;
-        }
-
-        .keeper-img {
-            position: absolute; bottom: 0; left: 50%; transform: translateX(-50%);
-            width: 120px; height: auto; filter: drop-shadow(0 0 10px #000);
-            transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-
-        /* Target Circles (The 6 Dots) */
-        .target-grid {
-            position: absolute; inset: 0;
-            display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(2, 1fr);
-        }
-        .target-node {
-            display: flex; align-items: center; justify-content: center; cursor: pointer;
-        }
-        .target-node::after {
-            content: ''; width: 50px; height: 50px; border: 3px solid yellow; border-radius: 50%;
-            box-shadow: 0 0 15px yellow; opacity: 0.6; transition: 0.3s;
-        }
-        .target-node:hover::after { opacity: 1; transform: scale(1.2); background: rgba(255,255,0,0.2); }
-
-        /* Ball & Player Visual */
-        .player-visual { position: absolute; bottom: 5%; width: 100px; text-align: center; }
-        #ball {
-            width: 50px; height: 50px; background: white; border-radius: 50%;
-            background-image: radial-gradient(circle at 30% 30%, #fff, #333);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
-            position: absolute; bottom: 120px; left: 50%; transform: translateX(-50%);
-            transition: 0.6s cubic-bezier(0.165, 0.84, 0.44, 1);
-        }
-
-        /* Score Trackers */
-        .penalties-track {
-            position: absolute; bottom: 20px; display: flex; gap: 8px;
-        }
-        .p-ball { width: 25px; height: 25px; border-radius: 50%; border: 2px solid #555; background: #222; }
-        .p-ball.scored { background: var(--neon-green); box-shadow: 0 0 10px var(--neon-green); }
-        .p-ball.missed { background: #ff003c; box-shadow: 0 0 10px #ff003c; }
-
+        body { margin: 0; background: #000; overflow: hidden; font-family: sans-serif; }
+        canvas { display: block; width: 100vw; height: 100vh; }
+        .ui-overlay { position: fixed; top: 0; width: 100%; color: white; pointer-events: none; }
+        .stats { display: flex; justify-content: space-between; padding: 15px; background: rgba(0,0,0,0.7); border-bottom: 2px solid #39ff14; }
+        .bal { color: #39ff14; font-weight: bold; }
     </style>
 </head>
 <body>
 
-<div class="stadium-bg"></div>
-
-<div class="top-bar">
-    <div class="balance">XMR BALANCE: 2.00 <span>($320.50 USD)</span></div>
-    <div style="color: yellow; font-size: 1.2rem;" id="timer">30</div>
-    <div style="text-align: right; font-size: 0.8rem;">BET: $100.00 <br> <span id="role-text">STRIKER</span></div>
-</div>
-
-<div class="pitch">
-    <div class="goal-container" id="goal">
-        <img src="https://www.svgrepo.com/show/244510/goalkeeper-soccer.svg" class="keeper-img" id="keeper" alt="keeper">
-        
-        <div class="target-grid">
-            <div class="target-node" onclick="shoot(1)"></div>
-            <div class="target-node" onclick="shoot(2)"></div>
-            <div class="target-node" onclick="kick(3)"></div>
-            <div class="target-node" onclick="kick(4)"></div>
-            <div class="target-node" onclick="kick(5)"></div>
-            <div class="target-node" onclick="kick(6)"></div>
-        </div>
+<div class="ui-overlay">
+    <div class="stats">
+        <div class="bal">BALANCE: 1.00 XMR</div>
+        <div style="color: yellow;">TIME: 30s</div>
     </div>
-
-    <div id="ball"></div>
-
-    <div class="penalties-track" id="score-track">
-        </div>
 </div>
+
+<canvas id="gameCanvas"></canvas>
 
 <script>
-    // Create the 10 penalty balls
-    const track = document.getElementById('score-track');
-    for(let i=0; i<10; i++) track.innerHTML += '<div class="p-ball"></div>';
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
 
-    function kick(pos) {
-        const ball = document.getElementById('ball');
-        const keeper = document.getElementById('keeper');
-        const nodes = document.querySelectorAll('.target-node');
-        const target = nodes[pos-1].getBoundingClientRect();
-        const pitch = document.querySelector('.pitch').getBoundingClientRect();
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
 
-        // Move Ball to Target
-        ball.style.bottom = (window.innerHeight - target.top - 25) + 'px';
-        ball.style.left = (target.left + target.width/2) + 'px';
-        ball.style.transform = 'translateX(-50%) scale(0.6)';
+    let ball = { x: canvas.width / 2, y: canvas.height - 100, radius: 20, targetX: canvas.width / 2, targetY: canvas.height - 100, moving: false };
+    let keeper = { x: canvas.width / 2, y: 180, width: 80, height: 120 };
 
-        // Keeper AI Defense
-        const botPos = Math.floor(Math.random() * 6) + 1;
-        const botTarget = nodes[botPos-1].getBoundingClientRect();
+    function drawField() {
+        // الرسم الاحترافي للملعب
+        let grad = ctx.createRadialGradient(canvas.width/2, canvas.height, 0, canvas.width/2, canvas.height, canvas.height);
+        grad.addColorStop(0, '#2d5a27');
+        grad.addColorStop(1, '#1e3c1a');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // خطوط الملعب
+        ctx.strokeStyle = "rgba(255,255,255,0.2)";
+        ctx.lineWidth = 5;
+        ctx.strokeRect(20, 20, canvas.width - 40, canvas.height - 40);
         
-        setTimeout(() => {
-            keeper.style.left = (botTarget.left - (window.innerWidth/2 - 250) + 80) + 'px';
-            keeper.style.bottom = (250 - (botTarget.top - document.getElementById('goal').offsetTop)) + 'px';
+        // المرمى (The Goal)
+        ctx.strokeStyle = "white";
+        ctx.lineWidth = 8;
+        ctx.strokeRect(canvas.width/2 - 150, 80, 300, 200);
+        
+        // الشبكة (The Net)
+        ctx.beginPath();
+        ctx.lineWidth = 1;
+        ctx.strokeStyle = "rgba(255,255,255,0.3)";
+        for(let i=0; i<300; i+=20) {
+            ctx.moveTo(canvas.width/2 - 150 + i, 80);
+            ctx.lineTo(canvas.width/2 - 150 + i, 280);
+            ctx.moveTo(canvas.width/2 - 150, 80 + (i/300*200));
+            ctx.lineTo(canvas.width/2 + 150, 80 + (i/300*200));
+        }
+        ctx.stroke();
+    }
+
+    function drawKeeper() {
+        ctx.fillStyle = "#ff4444"; // لون الحارس
+        ctx.shadowBlur = 15;
+        ctx.shadowColor = "red";
+        ctx.fillRect(keeper.x - keeper.width/2, keeper.y - keeper.height/2, keeper.width, keeper.height);
+        ctx.shadowBlur = 0;
+    }
+
+    function drawBall() {
+        ctx.beginPath();
+        ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+        ctx.fillStyle = "white";
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = "white";
+        ctx.fill();
+        ctx.closePath();
+        ctx.shadowBlur = 0;
+    }
+
+    function update() {
+        if (ball.moving) {
+            ball.x += (ball.targetX - ball.x) * 0.1;
+            ball.y += (ball.targetY - ball.y) * 0.1;
+            ball.radius -= 0.2; // تأثير البعد
+
+            if (Math.abs(ball.y - ball.targetY) < 5) {
+                ball.moving = false;
+                setTimeout(resetGame, 1000);
+            }
+        }
+    }
+
+    function resetGame() {
+        ball = { x: canvas.width / 2, y: canvas.height - 100, radius: 20, targetX: canvas.width / 2, targetY: canvas.height - 100, moving: false };
+        keeper.x = canvas.width / 2;
+    }
+
+    canvas.addEventListener('click', (e) => {
+        if (!ball.moving) {
+            ball.targetX = e.clientX;
+            ball.targetY = e.clientY;
+            ball.moving = true;
             
-            setTimeout(() => {
-                if(botPos === pos) alert("SAVED!");
-                else alert("GOAL!");
-                resetPosition();
-            }, 500);
-        }, 100);
+            // تحريك الحارس عشوائيا لصد الكرة
+            keeper.x = ball.targetX + (Math.random() * 40 - 20);
+        }
+    });
+
+    function loop() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        drawField();
+        drawKeeper();
+        drawBall();
+        update();
+        requestAnimationFrame(loop);
     }
 
-    function resetPosition() {
-        const ball = document.getElementById('ball');
-        ball.style.bottom = '120px';
-        ball.style.left = '50%';
-        ball.style.transform = 'translateX(-50%) scale(1)';
-        document.getElementById('keeper').style.left = '50%';
-        document.getElementById('keeper').style.bottom = '0';
-    }
+    loop();
 </script>
-
 </body>
 </html>
