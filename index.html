@@ -1,225 +1,161 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Penalty Race</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Platform_Core_v2</title>
+    <style>
+        :root { --neon-green: #39ff14; --gold: #ffd700; }
+        body { margin: 0; background: #000; font-family: 'Arial Black', sans-serif; color: white; overflow: hidden; }
+        
+        /* Realistic Grass Background */
+        .stadium-bg {
+            position: fixed; inset: 0;
+            background: radial-gradient(circle, #2d5a27 0%, #1e3c1a 100%);
+            background-image: repeating-linear-gradient(90deg, transparent, transparent 50px, rgba(255,255,255,0.02) 50px, rgba(255,255,255,0.02) 100px);
+            z-index: -1;
+        }
 
-<style>
-:root { --neon:#00ff41; --bg:#030303; --gray:#1a1a1a; }
-body{
-    background:var(--bg);
-    color:white;
-    font-family:Segoe UI,Roboto,sans-serif;
-    margin:0;
-    height:100vh;
-    overflow:hidden;
-}
-.screen{
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    padding:20px;
-}
-.goal-post{
-    position:relative;
-    width:100%;
-    height:200px;
-    border:5px solid white;
-    border-bottom:none;
-    display:grid;
-    grid-template-columns:repeat(3,1fr);
-    grid-template-rows:repeat(2,1fr);
-}
-.target-node{
-    border:1px solid rgba(255,255,255,0.05);
-    cursor:pointer;
-}
-.target-node::before{
-    content:'';
-    width:35px;
-    height:35px;
-    border:2px solid yellow;
-    border-radius:50%;
-    opacity:0.6;
-    display:block;
-    margin:auto;
-    margin-top:20px;
-}
-#ball{
-    position:absolute;
-    bottom:-50px;
-    left:50%;
-    transform:translateX(-50%);
-    font-size:2.5rem;
-    transition:0.6s;
-}
-#keeper{
-    position:absolute;
-    top:40%;
-    left:50%;
-    transform:translateX(-50%);
-    font-size:3rem;
-    transition:0.3s;
-}
-.info-box{
-    width:100%;
-    display:flex;
-    justify-content:space-between;
-    font-weight:bold;
-    margin-bottom:15px;
-}
-#status{
-    margin-top:40px;
-    font-weight:bold;
-    color:var(--neon);
-}
-</style>
+        /* Top Bar: Wallet & Status */
+        .top-bar {
+            position: absolute; top: 0; width: 100%; height: 60px;
+            background: rgba(0,0,0,0.8); border-bottom: 2px solid var(--neon-green);
+            display: flex; justify-content: space-between; align-items: center; padding: 0 15px; box-sizing: border-box;
+        }
+        .balance { font-size: 0.9rem; color: var(--neon-green); text-shadow: 0 0 5px var(--neon-green); }
+        .balance span { color: white; display: block; font-size: 0.7rem; }
+
+        /* The Goal & Pitch */
+        .pitch {
+            position: relative; width: 100%; height: 100vh;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        }
+
+        .goal-container {
+            position: relative; width: 95%; max-width: 500px; height: 250px;
+            border: 6px solid #fff; border-bottom: none; border-radius: 5px 5px 0 0;
+            background: rgba(255,255,255,0.1); box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        /* Goal Net Pattern */
+        .goal-container::before {
+            content: ''; position: absolute; inset: 0;
+            background-image: linear-gradient(#ffffff22 1px, transparent 1px), linear-gradient(90deg, #ffffff22 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+
+        .keeper-img {
+            position: absolute; bottom: 0; left: 50%; transform: translateX(-50%);
+            width: 120px; height: auto; filter: drop-shadow(0 0 10px #000);
+            transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        /* Target Circles (The 6 Dots) */
+        .target-grid {
+            position: absolute; inset: 0;
+            display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(2, 1fr);
+        }
+        .target-node {
+            display: flex; align-items: center; justify-content: center; cursor: pointer;
+        }
+        .target-node::after {
+            content: ''; width: 50px; height: 50px; border: 3px solid yellow; border-radius: 50%;
+            box-shadow: 0 0 15px yellow; opacity: 0.6; transition: 0.3s;
+        }
+        .target-node:hover::after { opacity: 1; transform: scale(1.2); background: rgba(255,255,0,0.2); }
+
+        /* Ball & Player Visual */
+        .player-visual { position: absolute; bottom: 5%; width: 100px; text-align: center; }
+        #ball {
+            width: 50px; height: 50px; background: white; border-radius: 50%;
+            background-image: radial-gradient(circle at 30% 30%, #fff, #333);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+            position: absolute; bottom: 120px; left: 50%; transform: translateX(-50%);
+            transition: 0.6s cubic-bezier(0.165, 0.84, 0.44, 1);
+        }
+
+        /* Score Trackers */
+        .penalties-track {
+            position: absolute; bottom: 20px; display: flex; gap: 8px;
+        }
+        .p-ball { width: 25px; height: 25px; border-radius: 50%; border: 2px solid #555; background: #222; }
+        .p-ball.scored { background: var(--neon-green); box-shadow: 0 0 10px var(--neon-green); }
+        .p-ball.missed { background: #ff003c; box-shadow: 0 0 10px #ff003c; }
+
+    </style>
 </head>
-
 <body>
-<div class="screen">
 
-<h2 style="color:var(--neon)">⚽ GOAL RACE MODE</h2>
+<div class="stadium-bg"></div>
 
-<div class="info-box">
-    <div>P1 Goals: <span id="p1-goals">0</span>/10</div>
-    <div>P2 Goals: <span id="p2-goals">0</span>/10</div>
+<div class="top-bar">
+    <div class="balance">XMR BALANCE: 2.00 <span>($320.50 USD)</span></div>
+    <div style="color: yellow; font-size: 1.2rem;" id="timer">30</div>
+    <div style="text-align: right; font-size: 0.8rem;">BET: $100.00 <br> <span id="role-text">STRIKER</span></div>
 </div>
 
-<div class="info-box">
-    <div>P1 Shots: <span id="p1-shots">0</span>/10</div>
-    <div>P2 Shots: <span id="p2-shots">0</span>/10</div>
-</div>
+<div class="pitch">
+    <div class="goal-container" id="goal">
+        <img src="https://www.svgrepo.com/show/244510/goalkeeper-soccer.svg" class="keeper-img" id="keeper" alt="keeper">
+        
+        <div class="target-grid">
+            <div class="target-node" onclick="shoot(1)"></div>
+            <div class="target-node" onclick="shoot(2)"></div>
+            <div class="target-node" onclick="kick(3)"></div>
+            <div class="target-node" onclick="kick(4)"></div>
+            <div class="target-node" onclick="kick(5)"></div>
+            <div class="target-node" onclick="kick(6)"></div>
+        </div>
+    </div>
 
-<div class="goal-post" id="goal">
-    <div id="keeper">🧤</div>
+    <div id="ball"></div>
 
-    <div class="target-node" onclick="kick(1)"></div>
-    <div class="target-node" onclick="kick(2)"></div>
-    <div class="target-node" onclick="kick(3)"></div>
-    <div class="target-node" onclick="kick(4)"></div>
-    <div class="target-node" onclick="kick(5)"></div>
-    <div class="target-node" onclick="kick(6)"></div>
-
-    <div id="ball">⚽</div>
-</div>
-
-<div id="status">Player 1 SHOOTS</div>
-
+    <div class="penalties-track" id="score-track">
+        </div>
 </div>
 
 <script>
-/* ==========================
-   GOAL RACE SETTINGS
-========================== */
+    // Create the 10 penalty balls
+    const track = document.getElementById('score-track');
+    for(let i=0; i<10; i++) track.innerHTML += '<div class="p-ball"></div>';
 
-let currentShooter = 1;
+    function kick(pos) {
+        const ball = document.getElementById('ball');
+        const keeper = document.getElementById('keeper');
+        const nodes = document.querySelectorAll('.target-node');
+        const target = nodes[pos-1].getBoundingClientRect();
+        const pitch = document.querySelector('.pitch').getBoundingClientRect();
 
-let p1Goals = 0;
-let p2Goals = 0;
+        // Move Ball to Target
+        ball.style.bottom = (window.innerHeight - target.top - 25) + 'px';
+        ball.style.left = (target.left + target.width/2) + 'px';
+        ball.style.transform = 'translateX(-50%) scale(0.6)';
 
-let p1Shots = 0;
-let p2Shots = 0;
-
-const maxGoals = 10;
-const maxShots = 10;
-
-/* ==========================
-   UPDATE UI
-========================== */
-function updateUI(){
-    document.getElementById("p1-goals").innerText = p1Goals;
-    document.getElementById("p2-goals").innerText = p2Goals;
-
-    document.getElementById("p1-shots").innerText = p1Shots;
-    document.getElementById("p2-shots").innerText = p2Shots;
-
-    document.getElementById("status").innerText =
-        currentShooter === 1
-        ? "Player 1 SHOOTS"
-        : "Player 2 SHOOTS";
-}
-
-/* ==========================
-   END GAME
-========================== */
-function endGame(winner){
-    alert("🏆 GAME OVER!\n\nWinner: Player " + winner);
-}
-
-/* ==========================
-   MAIN KICK
-========================== */
-function kick(pos){
-
-    // Check shots limit
-    if(currentShooter === 1 && p1Shots >= maxShots){
-        alert("Player 1 has no shots left!");
-        return;
-    }
-    if(currentShooter === 2 && p2Shots >= maxShots){
-        alert("Player 2 has no shots left!");
-        return;
+        // Keeper AI Defense
+        const botPos = Math.floor(Math.random() * 6) + 1;
+        const botTarget = nodes[botPos-1].getBoundingClientRect();
+        
+        setTimeout(() => {
+            keeper.style.left = (botTarget.left - (window.innerWidth/2 - 250) + 80) + 'px';
+            keeper.style.bottom = (250 - (botTarget.top - document.getElementById('goal').offsetTop)) + 'px';
+            
+            setTimeout(() => {
+                if(botPos === pos) alert("SAVED!");
+                else alert("GOAL!");
+                resetPosition();
+            }, 500);
+        }, 100);
     }
 
-    // Count shot only when clicked
-    if(currentShooter === 1) p1Shots++;
-    else p2Shots++;
-
-    const ball = document.getElementById("ball");
-    const keeper = document.getElementById("keeper");
-    const nodes = document.querySelectorAll(".target-node");
-
-    const target = nodes[pos-1].getBoundingClientRect();
-    const goal = document.getElementById("goal").getBoundingClientRect();
-
-    // Animate ball
-    ball.style.bottom="150px";
-    ball.style.left=(target.left-goal.left+target.width/2)+"px";
-
-    setTimeout(()=>{
-
-        // Random save
-        let savePos = Math.floor(Math.random()*6)+1;
-        const botTarget = nodes[savePos-1].getBoundingClientRect();
-
-        keeper.style.left=(botTarget.left-goal.left+botTarget.width/2)+"px";
-        keeper.style.top=(botTarget.top-goal.top)+"px";
-
-        setTimeout(()=>{
-
-            if(savePos !== pos){
-                alert("⚽ GOAL!");
-
-                if(currentShooter === 1) p1Goals++;
-                else p2Goals++;
-
-                // Winner check
-                if(p1Goals >= maxGoals) return endGame(1);
-                if(p2Goals >= maxGoals) return endGame(2);
-
-            } else {
-                alert("🧤 SAVED!");
-            }
-
-            // Reset
-            ball.style.bottom="-50px";
-            ball.style.left="50%";
-            keeper.style.left="50%";
-            keeper.style.top="40%";
-
-            // Switch shooter
-            currentShooter = currentShooter === 1 ? 2 : 1;
-            updateUI();
-
-        },500);
-
-    },200);
-}
-
-updateUI();
+    function resetPosition() {
+        const ball = document.getElementById('ball');
+        ball.style.bottom = '120px';
+        ball.style.left = '50%';
+        ball.style.transform = 'translateX(-50%) scale(1)';
+        document.getElementById('keeper').style.left = '50%';
+        document.getElementById('keeper').style.bottom = '0';
+    }
 </script>
 
 </body>
-    </html>
+</html>
